@@ -162,8 +162,8 @@
                 chunks.push(hexString.slice(i, i + chunkSize));
             }
             return chunks;
-        }
-
+        } 
+ 
         function concatenateInputs() {
             const inputs = ['batch', 'date', 'supplier', 'material', 'color', 'length','serial', 'reserve'];
             const values = inputs.map(id => document.getElementById(id).value);
