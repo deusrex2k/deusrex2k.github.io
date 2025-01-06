@@ -1,1 +1,186 @@
-hello world
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 600px;
+                margin: 20px auto;
+                padding: 20px;
+            }
+            .form-group {
+                margin-bottom: 15px;
+            }
+            label {
+                display: inline-block;
+                width: 100px;
+                margin-right: 10px;
+            }
+            input[type="text"] {
+                padding: 5px;
+                width: 200px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+            button {
+                background-color: #4CAF50;
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                margin-top: 10px;
+            }
+            button:hover {
+                background-color: #45a049;
+            }
+            #result, #hexResult, #materiallist {
+                margin-top: 20px;
+                padding: 10px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            .result-label {
+                font-weight: bold;
+                margin-top: 15px;
+            }
+        </style>
+    </head>
+<body>
+<h1>PROXMARK3 for CFS</h1>
+<p>This page will help you generate commands to write RFID tags that work with the Creality K2 Plus and CFS. It assumes you already have working knowledge of how to use a PROXMARK3 and have Proxtools by ICEMAN installed.</p>
+<p>WARNING!! I put no safeguards into this page, so you must be careful with the data you enter. There are NO data checks!</p>
+<p>You should end up with 3 commands, all with the same number of characters. If you don't, try refreshing the page to get default values and try again.</p>
+<p>The number of characters expected for each entry is in paranthesis next to each label</p>
+
+    <div class="form-container">
+        <div class="form-group">
+            <label for="batch">Batch (3):</label>
+            <input type="text" id="batch" name="batch" value="1A5">
+        </div>
+        <div class="form-group">
+            <label for="serial">Serial (6):</label>
+            <input type="text" id="serial" name="serial" value="000001">
+        </div>
+        <div class="form-group">
+            <label for="supplier">Supplier (4):</label>
+            <input type="text" id="supplier" name="supplier" value="1B3D">
+        </div>
+        <div class="form-group">
+            <label for="date">Date (5):</label>
+            <input type="text" id="date" name="date" value="24120">
+        </div>
+        <div class="form-group">
+            <label for="material">Material (5):</label>
+            <input type="text" id="material" name="material" value="01001"> (Default values below)
+        </div>
+        <div class="form-group">
+            <label for="length">Length (4):</label>
+            <input type="text" id="length" name="length" value = "0330">
+        </div>
+        <div class="form-group">
+            <label for="color">Color (7):</label>
+            <input type="text" id="color" name="color" value="#0000FF">
+            <input type="color" id="colorPicker" onchange="updateColorText(this.value)" value="#0000FF">
+        </div>
+        <div class="form-group">
+            <label for="reserve">Reserve (14):</label>
+            <input type="text" id="reserve" name="reserve" value="00000000000000">
+        </div>
+        <button onclick="concatenateInputs()">Create</button>
+        <div class="result-label">ASCII Result:</div>
+        <div id="result"></div>
+
+        <div class="result-label">PROXMARK3 Commands:</div>
+        <div id="hexResult"></div>
+
+        <div class = "result-label">Default Materials:</div>
+        <div id="materiallist">
+            10001 - HP-TPU<br>
+            11001 - CR-Nylon<br>
+            13001 - CR-PLACarbon<br>
+            14001 - CR-PLAMatte<br>
+            15001 - CR-PLAFluo<br>
+            16001 - CR-TPU<br>
+            17001 - CR-Wood<br>
+            18001 - HPUltraPLA<br>
+            19001 - HP-ASA<br>
+            07001 - CR-ABS<br>
+            06001 - CR-PETG<br>
+            04001 - CR-PLA<br>
+            05001 - CR-Silk<br>
+            09001 - EN-PLA+<br>
+            09002 - ENDERFASTPLA<br>
+            08001 - Ender-PLA<br>
+            00004 - GenericABS<br>
+            00007 - GenericASA<br>
+            00010 - GenericBVOH<br>
+            00012 - GenericHIPS<br>
+            00008 - GenericPA<br>
+            00009 - GenericPA-CF<br>
+            00015 - GenericPA6-CF<br>
+            00016 - GenericPAHT-CF<br>
+            00021 - GenericPC<br>
+            00020 - GenericPET<br>
+            00013 - GenericPET-CF<br>
+            00003 - GenericPETG<br>
+            00014 - GenericPETG-CF<br>
+            00001 - GenericPLA<br>
+            00006 - GenericPLA-CF<br>
+            00002 - GenericPLA-Silk<br>
+            00019 - GenericPP<br>
+            00017 - GenericPPS<br>
+            00018 - GenericPPS-CF<br>
+            00011 - GenericPVA<br>
+            00005 - GenericTPU<br>
+            03001 - HyperABS<br>
+            06002 - HyperPETG<br>
+            01001 - HyperPLA<br>
+            02001 - HyperPLA-CF<br>
+        </div>
+    </div>
+
+
+    <script>
+
+        function updateColorText(color) {
+            // Convert to uppercase
+            document.getElementById('color').value = color.toUpperCase();
+        }
+        function stringToHex(str) {
+            let hex = '';
+            for (let i = 0; i < str.length; i++) {
+                hex += str.charCodeAt(i).toString(16).padStart(2, '0');
+            }
+            return hex;
+        }
+
+        function splitIntoChunks(hexString, chunkSize) {
+            const chunks = [];
+            for (let i = 0; i < hexString.length; i += chunkSize) {
+                chunks.push(hexString.slice(i, i + chunkSize));
+            }
+            return chunks;
+        }
+
+        function concatenateInputs() {
+            const inputs = ['batch', 'date', 'supplier', 'material', 'color', 'length','serial', 'reserve'];
+            const values = inputs.map(id => document.getElementById(id).value);
+            const concatenated = values.join('');
+            document.getElementById('result').textContent = concatenated;
+
+            // Convert to hex and split into 16-byte chunks
+            const hexString = stringToHex(concatenated);
+            const chunks = splitIntoChunks(hexString, 32); // 32 hex chars = 16 bytes
+            
+            // Create command lines with incrementing block numbers
+            const commandLines = chunks.map((chunk, index) => 
+                `hf mf wrbl --blk ${4 + index} -k FFFFFFFFFFFF -d ${chunk}`
+            );
+            
+            document.getElementById('hexResult').innerHTML = commandLines.join('<br>');
+        }
+    </script>
+</body>
+</html>
