@@ -34,7 +34,7 @@
             button:hover {
                 background-color: #45a049;
             }
-            #result, #hexResult, #materiallist {
+            #result, #hexResult, #materiallist, #key, #resultEncrypted, #hexResultencrypted {
                 margin-top: 20px;
                 padding: 10px;
                 border: 1px solid #ddd;
@@ -50,10 +50,11 @@
 <body>
 <h1>PROXMARK3 for CFS      <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'K3K7C3O9T');kofiwidget2.draw();</script> </h1>
 <p>This page will help you generate commands to write RFID tags that work with the Creality K2 Plus and CFS. It assumes you already have working knowledge of how to use a PROXMARK3 and have Proxtools by ICEMAN installed.</p>
+<p>This page now supports Creality Tag Encryption! You will need the 8 digit UID of the tag to generate the Key for Sector 1. You can even re-use Creality tags and reprogram them with whatever values you want.</p>
 <p>WARNING!! I put no safeguards into this page, so you must be careful with the data you enter. There are NO data checks!</p>
 <p>You should end up with 3 commands, all with the same number of characters. If you don't, try refreshing the page to get default values and try again.</p>
 <p>The number of characters expected for each entry is in paranthesis next to each label</p>
-
+<p>For an easier experience, check out my Android App - <a href="https://play.google.com/store/apps/details?id=com.lot38designs.cfsrfid">RFID for CFS</a></p>
 
     <div class="form-container">
         <div class="form-group">
@@ -61,41 +62,61 @@
             <input type="text" id="batch" name="batch" value="1A5">
         </div>
         <div class="form-group">
-            <label for="serial">Serial (6):</label>
-            <input type="text" id="serial" name="serial" value="000001"> Change this between spools
-
+            <label for="date">Date (5):</label>
+            <input type="text" id="date" name="date" value="24120"> YYMDD (Use 1 digit for month)   
         </div>
         <div class="form-group">
             <label for="supplier">Supplier (4):</label>
             <input type="text" id="supplier" name="supplier" value="1B3D">
         </div>
         <div class="form-group">
-            <label for="date">Date (5):</label>
-            <input type="text" id="date" name="date" value="24120"> YYMDD (Use 1 digit for month)   
-        </div>
-        <div class="form-group">
             <label for="material">Material (5):</label>
             <input type="text" id="material" name="material" value="01001"> (Default values below)
+        </div>
+        <div class="form-group">
+            <label for="color">Color (7):</label>
+            <input type="text" id="color" name="color" value="00000FF">
+            <input type="color" id="colorPicker" onchange="updateColorText(this.value)" value="#0000FF"> Note: Prefix is 0, not #
         </div>
         <div class="form-group">
             <label for="length">Length (4):</label>
             <input type="text" id="length" name="length" value = "0330"> 0330 for 1kg, 0165 for 500g 
         </div>
         <div class="form-group">
-            <label for="color">Color (7):</label>
-            <input type="text" id="color" name="color" value="#0000FF">
-            <input type="color" id="colorPicker" onchange="updateColorText(this.value)" value="#0000FF">
+            <label for="serial">Serial (6):</label>
+            <input type="text" id="serial" name="serial" value="000001"> Change this between spools
+
         </div>
         <div class="form-group">
             <label for="reserve">Reserve (14):</label>
             <input type="text" id="reserve" name="reserve" value="00000000000000"> Not used (yet)
         </div>
-        <button onclick="concatenateInputs()">Create</button>
+        <button onclick="concatenateInputs()">Create Unenrypted</button>
         <div class="result-label">ASCII Result:</div>
         <div id="result"></div>
 
         <div class="result-label">PROXMARK3 Commands (should only be 3 lines):</div>
         <div id="hexResult"></div>
+
+
+        <div class="result-label">Tag Encryption:</div>
+
+        <div class="form-group">
+            <label for="uid ">Tag UID:</label>
+            <input type="text" id="uid" name="uid" value="3A14ACF1">
+        </div>
+
+        <select id="optencrypt" name="optencrypt">
+          <option value="notencrypted" selected>Tag is not encrypted yet</option>
+          <option value="isencrypted">Tag is already encrypted</option>
+        </select> 
+
+        <button onclick="concatenateInputsEncrypted()">Create Encrypted</button>
+        <div class="result-label">Sector 1 Key:</div>
+        <div id="key"></div>
+
+        <div class="result-label">PROXMARK3 Commands (should be 4 lines to also set Sector 1 security):</div>
+        <div id="hexResultencrypted"></div>
 
         <div class = "result-label">Default Materials:</div>
         <div id="materiallist">
@@ -149,7 +170,7 @@
 
         function updateColorText(color) {
             // Convert to uppercase
-            document.getElementById('color').value = color.toUpperCase();
+            document.getElementById('color').value = '0' + color.toUpperCase().substring(1,7);
         }
         function stringToHex(str) {
             let hex = '';
@@ -184,6 +205,102 @@
             
             document.getElementById('hexResult').innerHTML = commandLines.join('<br>');
         }
+
+        function concatenateInputsEncrypted() {
+            const inputs = ['batch', 'date', 'supplier', 'material', 'color', 'length','serial', 'reserve'];
+            const values = inputs.map(id => document.getElementById(id).value);
+            const concatenated = values.join('');
+            var uid = document.getElementById('uid').value;
+
+            uid = uid.concat(uid);
+            uid = uid.concat(uid);
+            console.log("UID : " + uid);
+            const longkey = encrypt(uid, 'q3bu^t1nqfZ(pf$1');
+
+            var keya = longkey.toString().substring(0,12);
+            document.getElementById('key').textContent = keya;
+                       
+
+            // Convert to hex and split into 16-byte chunks
+            var hexString = stringToHex(concatenated);
+            hexString = encrypt(hexString, 'H@CFkRnz@KAtBJp2').toString();
+            
+            //document.getElementById('resultEncrypted').textContent = hexString;
+            var yourSelect = document.getElementById('optencrypt')
+            if (yourSelect.selectedOptions[0].value == 'notencrypted'){
+                hexString = hexString.concat(keya+'FF078069'+keya);
+                keya = 'FFFFFFFFFFF'; 
+            }  
+
+            const chunks = splitIntoChunks(hexString, 32); // 32 hex chars = 16 bytes
+            
+            // Create command lines with incrementing block numbers
+            const commandLines = chunks.map((chunk, index) => 
+                `hf mf wrbl --blk ${4 + index} -k ${keya} -d ${chunk}`
+            );
+            
+
+
+            document.getElementById('hexResultencrypted').innerHTML = commandLines.join('<br>');
+            
+
+        
+        }
+
+        function encrypt(plaintext, secret) {
+            var key = CryptoJS.enc.Utf8.parse(secret);
+            var inputwords = CryptoJS.enc.Hex.parse(plaintext);
+            let iv = CryptoJS.lib.WordArray.create(key.words.slice(0, 4));
+            console.log("IV : " + CryptoJS.enc.Base64.stringify(iv));
+        
+            // Encrypt the plaintext
+            var cipherText = CryptoJS.AES.encrypt(inputwords, key, {
+            iv: iv,
+            mode: CryptoJS.mode.ECB,
+            padding: CryptoJS.pad.NoPadding
+            });
+
+            // Encrypted data as WordArray
+            var encryptedWA = cipherText.ciphertext;
+
+            // Conversion to array
+            //var encryptedBA = hexToBytes(CryptoJS.enc.Hex.stringify(encryptedWA));
+
+          return encryptedWA;
+        }
+
+        function decrypt(cipherText, secret, iv) {
+            // IV is a base64 string
+            let iv1 = CryptoJS.enc.Base64.parse(iv);
+            
+            var key = CryptoJS.enc.Utf8.parse(secret);
+            var cipherBytes = CryptoJS.enc.Base64.parse(cipherText);
+
+            var decrypted = CryptoJS.AES.decrypt({ciphertext: cipherBytes}, key, {
+                iv: iv1,
+                mode: CryptoJS.mode.ECB,
+                padding: CryptoJS.pad.Pkcs7
+            });
+
+         return decrypted.toString(CryptoJS.enc.Utf8);
+        }
+
+      // Helper: from https://stackoverflow.com/a/34356351/9014097
+        function hexToBytes(hex) {
+            for (var bytes = [], c = 0; c < hex.length; c += 2)
+                bytes.push(parseInt(hex.substr(c, 2), 16));
+            return bytes;
+        }
+
+        function bytesToHex(bytes) {
+            for (var hex = [], i = 0; i < bytes.length; i++) {
+                var current = bytes[i] < 0 ? bytes[i] + 256 : bytes[i];
+                hex.push((current >>> 4).toString(16));
+                hex.push((current & 0xF).toString(16));
+            }
+            return hex.join("");
+        }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
 </body>
 </html>
