@@ -76,7 +76,7 @@
         <div class="form-group">
             <label for="color">Color (7):</label>
             <input type="text" id="color" name="color" value="00000FF">
-            <input type="color" id="colorPicker" onchange="updateColorText(this.value)" value="#0000FF"> Note: Prefix is 0, not #
+            <input type="color" id="colorPicker" onchange="updateColorText(this.value)" value="00000FF"> Note: Prefix is 0, not #
         </div>
         <div class="form-group">
             <label for="length">Length (4):</label>
@@ -229,7 +229,7 @@
             var yourSelect = document.getElementById('optencrypt')
             if (yourSelect.selectedOptions[0].value == 'notencrypted'){
                 hexString = hexString.concat(keya+'FF078069'+keya);
-                keya = 'FFFFFFFFFFF'; 
+                keya = 'FFFFFFFFFFFF'; 
             }  
 
             const chunks = splitIntoChunks(hexString, 32); // 32 hex chars = 16 bytes
